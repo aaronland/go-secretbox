@@ -31,3 +31,4 @@ fmt:
 bin: 	self
 	@GOPATH=$(GOPATH) GOOS=darwin GOARCH=386 go build -o bin/darwin/secretbox cmd/secretbox.go
 	@GOPATH=$(GOPATH) GOOS=linux GOARCH=386 go build -o bin/linux/secretbox cmd/secretbox.go
+	@GOPATH=$(GOPATH) GOOS=linux GOARCH=386 go build -o bin/linux/saltshaker cmd/saltshaker.go
