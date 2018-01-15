@@ -11,7 +11,7 @@ self:   prep rmdeps
 	mkdir -p src/github.com/aaronland/go-secretbox
 	cp -r config src/github.com/aaronland/go-secretbox/
 	cp -r salt src/github.com/aaronland/go-secretbox/
-	# cp *.go src/github.com/aaronland/go-secretbox/
+	cp *.go src/github.com/aaronland/go-secretbox/
 	cp -r vendor/* src/
 
 rmdeps:
@@ -35,7 +35,7 @@ fmt:
 	go fmt cmd/*.go
 	go fmt config/*.go
 	go fmt salt/*.go
-	# go fmt *.go
+	go fmt *.go
 
 # PLEASE CLEAN ALL OF THIS UP... (20180115/thisisaaronland)
 
