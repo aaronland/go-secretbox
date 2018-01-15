@@ -12,7 +12,6 @@ import (
 	"github.com/aaronland/go-secretbox"
 	"github.com/aaronland/go-secretbox/config"
 	"golang.org/x/crypto/ssh/terminal"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
@@ -68,36 +67,13 @@ func main() {
 			path = parts[1]
 		}
 
-		abs_path, err := filepath.Abs(path)
-		// log.Println("SALT", abs_path)
+		s, err := config.ReadSalt(path)
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		log.Println(abs_path)
-
-		_, err = os.Stat(abs_path)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fh, err := os.Open(abs_path)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		defer fh.Close()
-
-		body, err := ioutil.ReadAll(fh)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		*salt = string(body)
+		*salt = s
 
 	} else if *salt != "" {
 		// pass
