@@ -2,3 +2,4 @@ src
 pkg
 !vendor/src
 bin
+*~

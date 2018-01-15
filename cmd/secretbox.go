@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 )
@@ -83,7 +84,7 @@ func (sb Secretbox) UnlockFile(abs_path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	body := []byte(body_str)
 
 	var nonce [24]byte
@@ -133,9 +134,9 @@ func WriteFile(body []byte, path string) (string, error) {
 	}
 
 	err = fh.Close()
-	
+
 	if err != nil {
-	   return "", err
+		return "", err
 	}
 
 	return path, nil
@@ -146,8 +147,79 @@ func main() {
 	var suffix = flag.String("suffix", ".enc", "...")
 	var unlock = flag.Bool("unlock", false, "Decrypt files.")
 	var debug = flag.Bool("debug", false, "...")
+	var salt = flag.String("salt", "config:", "...")
 
 	flag.Parse()
+
+	files := flag.Args()
+
+	if len(files) == 0 {
+		log.Println("No secrets to tell!")
+		os.Exit(0)
+	}
+
+	if *salt == "env:" {
+		*salt = os.Getenv("SECRETBOX_SALT")
+	} else if strings.HasPrefix(*salt, "config:") {
+
+		parts := strings.Split(*salt, ":")
+		var path string
+
+		if len(parts) == 1 {
+			usr, err := user.Current()
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			home := usr.HomeDir
+			config := filepath.Join(home, ".config")
+			root := filepath.Join(config, "secretbox")
+			path = filepath.Join(root, "salt")
+
+		} else {
+			path = parts[1]
+		}
+
+		abs_path, err := filepath.Abs(path)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Println(abs_path)
+
+		_, err = os.Stat(abs_path)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fh, err := os.Open(abs_path)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer fh.Close()
+
+		body, err := ioutil.ReadAll(fh)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		*salt = string(body)
+
+	} else if *salt != "" {
+		// pass
+	} else {
+		log.Fatal("missing salt")
+	}
+
+	if len(*salt) < 8 {
+		log.Fatal("invalid salt")
+	}
 
 	fmt.Println("enter password: ")
 	pswd, err := terminal.ReadPassword(0)
@@ -169,13 +241,11 @@ func main() {
 
 	// https://godoc.org/golang.org/x/crypto/scrypt
 
-	salt := []byte("🍣🛢🤡☁🐄🐎☀🥑⚽")
-
 	N := 32768
 	r := 8
 	p := 1
 
-	skey, err := scrypt.Key(pswd, salt, N, r, p, 32)
+	skey, err := scrypt.Key(pswd, []byte(*salt), N, r, p, 32)
 
 	if err != nil {
 		log.Fatal(err)
@@ -190,7 +260,7 @@ func main() {
 		Debug:  *debug,
 	}
 
-	for _, path := range flag.Args() {
+	for _, path := range files {
 
 		abs_path, err := filepath.Abs(path)
 
