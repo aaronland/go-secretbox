@@ -12,6 +12,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/aaronland/go-secretbox/config"
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/scrypt"
 	"golang.org/x/crypto/ssh/terminal"
@@ -184,10 +185,7 @@ func main() {
 				log.Fatal(err)
 			}
 
-			home := usr.HomeDir
-			config := filepath.Join(home, ".config")
-			root := filepath.Join(config, "secretbox")
-			path = filepath.Join(root, "salt")
+			path = config.DefaultPathForUser(usr)
 
 		} else {
 			path = parts[1]

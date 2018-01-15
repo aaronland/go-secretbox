@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
-	"os"
+	"github.com/aaronland/go-secretbox/config"
+	"log"
+	_ "os"
 	"os/user"
-	"path/filepath"
 )
 
 func main() {
@@ -19,11 +20,8 @@ func main() {
 			log.Fatal(err)
 		}
 
-		home := usr.HomeDir
-		config := filepath.Join(home, ".config")
-		root := filepath.Join(config, "secretbox")
-		path = filepath.Join(root, "salt")
-
-		*dest = path
+		*dest = config.DefaultPathForUser(usr)
 	}
+
+	log.Println(*dest)
 }
