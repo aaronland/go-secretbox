@@ -3,6 +3,8 @@ GOPATH := $(CWD)
 
 OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
+# CHECK $(OSTYPE) HERE FOR android...
+
 prep:
 	if test -d pkg; then rm -rf pkg; fi
 
