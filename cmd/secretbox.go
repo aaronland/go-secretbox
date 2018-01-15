@@ -151,11 +151,23 @@ func main() {
 
 	flag.Parse()
 
-	files := flag.Args()
+	possible := flag.Args()
+	files := make([]string, 0)
 
-	if len(files) == 0 {
+	if len(possible) == 0 {
 		log.Println("No secrets to tell!")
 		os.Exit(0)
+	}
+
+	for _, path := range possible {
+
+		abs_path, err := filepath.Abs(path)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		files = append(files, abs_path)
 	}
 
 	if *salt == "env:" {
@@ -165,7 +177,7 @@ func main() {
 		parts := strings.Split(*salt, ":")
 		var path string
 
-		if len(parts) == 1 {
+		if parts[1] == "" {
 			usr, err := user.Current()
 
 			if err != nil {
@@ -182,6 +194,7 @@ func main() {
 		}
 
 		abs_path, err := filepath.Abs(path)
+		// log.Println("SALT", abs_path)
 
 		if err != nil {
 			log.Fatal(err)
@@ -260,13 +273,7 @@ func main() {
 		Debug:  *debug,
 	}
 
-	for _, path := range files {
-
-		abs_path, err := filepath.Abs(path)
-
-		if err != nil {
-			log.Fatal(err)
-		}
+	for _, abs_path := range files {
 
 		var sb_path string
 		var sb_err error
