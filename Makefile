@@ -43,7 +43,10 @@ fmt:
 
 bin: 	self
 	@make compile
-	cp bin/$(OS)/* bin/
+	if test -e bin/secretbox; then rm bin/secretbox; fi
+	if test -e bin/saltshaker; then rm bin/saltshaker; fi
+	ln -s $(CWD)/bin/$(OS)/secretbox $(CWD)/bin/secretbox
+	ln -s $(CWD)/bin/$(OS)/saltshaker $(CWD)/bin/saltshaker
 
 darwin:
 	@make compile OS=darwin
