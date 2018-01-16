@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/aaronland/go-secretbox/config"
+	"github.com/aaronland/go-secretbox/salt"
 	"log"
 	_ "os"
 	"os/user"
@@ -23,5 +24,8 @@ func main() {
 		*dest = config.DefaultPathForUser(usr)
 	}
 
-	log.Println(*dest)
+	opts := salt.DefaultSaltOptions()
+	s, err := salt.NewRandomSalt(opts)
+
+	log.Println(s, err)
 }
