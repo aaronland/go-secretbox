@@ -3,7 +3,9 @@ GOPATH := $(CWD)
 
 OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
-# CHECK $(OSTYPE) HERE FOR android...
+ifeq ($(OSTYPE), android)
+	OS:= $(OSTYPE)
+endif
 
 prep:
 	if test -d pkg; then rm -rf pkg; fi
@@ -39,24 +41,22 @@ fmt:
 	go fmt salt/*.go
 	go fmt *.go
 
-# PLEASE CLEAN ALL OF THIS UP... (20180115/thisisaaronland)
-
 bin: 	self
+	@make compile
+	cp bin/$(OS)/* bin/
+
+darwin:
+	@make compile OS=darwin
+
+linux:
+	@make compile OS=linux
+
+android:
+	@make compile OS=android
+
+# see the way this is pegged at GOARCH=386? yeah that...
+
+compile: self
 	if test ! -d bin/$(OS); then mkdir -p bin/$(OS); fi
-	@GOPATH=$(GOPATH) go build -o bin/$(OS)/secretbox cmd/secretbox.go
-	@GOPATH=$(GOPATH) go build -o bin/$(OS)/saltshaker cmd/saltshaker.go
-
-darwin: self
-	if test ! -d bin/darwin; then mkdir -p bin/darwin; fi
-	@GOPATH=$(GOPATH) GOOS=darwin GOARCH=386 go build -o bin/darwin/secretbox cmd/secretbox.go
-	@GOPATH=$(GOPATH) GOOS=darwin GOARCH=386 go build -o bin/darwin/saltshaker cmd/saltshaker.go
-
-linux: self
-	if test ! -d bin/linux; then mkdir -p bin/linux; fi
-	@GOPATH=$(GOPATH) GOOS=linux GOARCH=386 go build -o bin/linux/secretbox cmd/secretbox.go
-	@GOPATH=$(GOPATH) GOOS=linux GOARCH=386 go build -o bin/linux/saltshaker cmd/saltshaker.go
-
-android: self
-	if test ! -d bin/android; then mkdir -p bin/android; fi
-	@GOPATH=$(GOPATH) GOOS=android GOARCH=386 go build -o bin/android/secretbox cmd/secretbox.go
-	@GOPATH=$(GOPATH) GOOS=android GOARCH=386 go build -o bin/android/saltshaker cmd/saltshaker.go
+	@GOPATH=$(GOPATH) GOOS=$(OS) GOARCH=386 go build -o bin/$(OS)/secretbox cmd/secretbox.go
+	@GOPATH=$(GOPATH) GOOS=$(OS) GOARCH=386 go build -o bin/$(OS)/saltshaker cmd/saltshaker.go
