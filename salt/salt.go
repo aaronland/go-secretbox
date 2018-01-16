@@ -65,6 +65,10 @@ func (s *Salt) String() string {
 	return s.salt
 }
 
+func (s *Salt) Bytes() []byte {
+	return []byte(s.salt)
+}
+
 type SaltOptions struct {
 	Length int
 }
