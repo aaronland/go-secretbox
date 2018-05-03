@@ -1,61 +1,12 @@
 package salt
 
-// this should probably just be put in a generic random string package
-// (20180115/thisisaaronland)
-
 import (
 	"errors"
-	"fmt"
+	"github.com/aaronland/go-string/random"
 	_ "log"
-	"math/rand"
-	"strings"
-	"time"
-	"unicode"
 )
 
 const min_length int = 16
-
-var runes []rune
-
-var r *rand.Rand
-
-func init() {
-
-	r = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	runes = make([]rune, 0)
-
-	codepoints := [][]int{
-		[]int{1, 255},         // ascii
-		[]int{127744, 128317}, // emoji
-	}
-
-	for _, r := range codepoints {
-
-		first := r[0]
-		last := r[1]
-
-		for i := first; i < last; i++ {
-
-			r := rune(i)
-
-			if unicode.IsControl(r) {
-				continue
-			}
-
-			if unicode.IsSpace(r) {
-				continue
-			}
-
-			if unicode.IsMark(r) {
-				continue
-			}
-
-			runes = append(runes, r)
-		}
-	}
-
-}
 
 type Salt struct {
 	salt string
@@ -84,27 +35,14 @@ func DefaultSaltOptions() *SaltOptions {
 
 func NewRandomSalt(opts *SaltOptions) (*Salt, error) {
 
-	count := len(runes)
+	str_opts := random.DefaultOptions()
 
-	result := make([]string, 0)
+	s, err := random.String(str_opts)
 
-	var last string
-
-	for len(result) < opts.Length {
-
-		j := r.Intn(count)
-		r := runes[j]
-		c := fmt.Sprintf("%c", r)
-
-		if c == last {
-			continue
-		}
-
-		result = append(result, c)
-		last = c
+	if err != nil {
+		return nil, err
 	}
 
-	s := strings.Join(result, "")
 	return NewSaltFromString(s)
 }
 
