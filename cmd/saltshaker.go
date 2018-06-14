@@ -14,8 +14,9 @@ import (
 
 func main() {
 
-	var output = flag.String("output", "", "Where to write the salt file. Default is ~/.config/secretbox/salt")
-	var length = flag.Int("length", 16, "How long the salt should be")
+	var output = flag.String("output", "", "Where to write the salt file. Default is ~/.config/secretbox/salt but if '-' then output will be written to STDOUT")
+	var length = flag.Int("length", 32, "How long the salt should be")
+	var ascii = flag.Bool("ascii", false, "Generate an ASCII-only salt")
 
 	flag.Parse()
 
@@ -44,6 +45,9 @@ func main() {
 
 	opts := salt.DefaultSaltOptions()
 	opts.Length = *length
+	opts.ASCII = *ascii
+
+	log.Println("IS ASCII", *ascii)
 
 	s, err := salt.NewRandomSalt(opts)
 
@@ -53,7 +57,7 @@ func main() {
 
 	var writer io.Writer
 
-	if *output == "STDOUT" {
+	if *output == "-" {
 		writer = os.Stdout
 	} else {
 
