@@ -36,3 +36,4 @@ _Error handling omitted for the sake of brevity._
 ## See also
 
 * https://godoc.org/golang.org/x/crypto/nacl/secretbox
+* https://github.com/aaronland/go-string
