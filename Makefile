@@ -48,6 +48,8 @@ bin: 	self
 	ln -s $(CWD)/bin/$(OS)/secretbox $(CWD)/bin/secretbox
 	ln -s $(CWD)/bin/$(OS)/saltshaker $(CWD)/bin/saltshaker
 
+dist: darwin linux android
+
 darwin:
 	@make compile OS=darwin
 
