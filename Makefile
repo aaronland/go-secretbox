@@ -27,6 +27,7 @@ deps:
 	@GOPATH=$(GOPATH) go get -u "golang.org/x/crypto/nacl/secretbox"
 	@GOPATH=$(GOPATH) go get -u "golang.org/x/crypto/scrypt"
 	@GOPATH=$(GOPATH) go get -u "golang.org/x/crypto/ssh/terminal"
+	@GOPATH=$(GOPATH) go get -u "github.com/aaronland/go-string"
 
 vendor-deps: rmdeps deps
 	if test ! -d vendor; then mkdir vendor; fi

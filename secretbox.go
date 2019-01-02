@@ -64,10 +64,7 @@ func NewSecretbox(pswd string, opts *SecretboxOptions) (*Secretbox, error) {
 	return &sb, nil
 }
 
-func (sb Secretbox) LockFile(abs_path string) (string, error) {
-
-	root := filepath.Dir(abs_path)
-	fname := filepath.Base(abs_path)
+func (sb Secretbox) Lock(body []byte) (string, error) {
 
 	var nonce [24]byte
 
@@ -77,14 +74,28 @@ func (sb Secretbox) LockFile(abs_path string) (string, error) {
 		return "", err
 	}
 
+	enc := secretbox.Seal(nonce[:], body, &nonce, &sb.Key)
+	enc_hex := base64.StdEncoding.EncodeToString(enc)
+
+	return enc_hex, nil
+}
+
+func (sb Secretbox) LockFile(abs_path string) (string, error) {
+
+	root := filepath.Dir(abs_path)
+	fname := filepath.Base(abs_path)
+
 	body, err := ReadFile(abs_path)
 
 	if err != nil {
 		return "", err
 	}
 
-	enc := secretbox.Seal(nonce[:], body, &nonce, &sb.Key)
-	enc_hex := base64.StdEncoding.EncodeToString(enc)
+	enc_hex, err := sb.Lock(body)
+
+	if err != nil {
+		return "", err
+	}
 
 	enc_fname := fmt.Sprintf("%s%s", fname, sb.options.Suffix)
 	enc_path := filepath.Join(root, enc_fname)
@@ -95,6 +106,28 @@ func (sb Secretbox) LockFile(abs_path string) (string, error) {
 	}
 
 	return WriteFile([]byte(enc_hex), enc_path)
+}
+
+func (sb Secretbox) Unlock(body_hex []byte) ([]byte, error) {
+
+	body_str, err := base64.StdEncoding.DecodeString(string(body_hex))
+
+	if err != nil {
+		return nil, err
+	}
+
+	body := []byte(body_str)
+
+	var nonce [24]byte
+	copy(nonce[:], body[:24])
+
+	out, ok := secretbox.Open(nil, body[24:], &nonce, &sb.Key)
+
+	if !ok {
+		return nil, errors.New("Unable to open secretbox")
+	}
+
+	return out, nil
 }
 
 func (sb Secretbox) UnlockFile(abs_path string) (string, error) {
@@ -113,22 +146,10 @@ func (sb Secretbox) UnlockFile(abs_path string) (string, error) {
 		return "", err
 	}
 
-	body_str, err := base64.StdEncoding.DecodeString(string(body_hex))
+	out, err := sb.Unlock(body_hex)
 
 	if err != nil {
 		return "", err
-	}
-
-	body := []byte(body_str)
-
-	var nonce [24]byte
-	copy(nonce[:], body[:24])
-
-	out, ok := secretbox.Open(nil, body[24:], &nonce, &sb.Key)
-
-	if !ok {
-		msg := fmt.Sprintf("Failed to unlock %s", abs_path)
-		return "", errors.New(msg)
 	}
 
 	out_fname := strings.TrimRight(fname, ext)
