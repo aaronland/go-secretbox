@@ -4,16 +4,16 @@ package salt
 // (20180614/thisisaaronland)
 
 import (
-       "errors"
+	"errors"
 	"github.com/aaronland/go-string/random"
 )
 
 var min_length int
 
 func init() {
-     min_length = 32
+	min_length = 32
 }
-     
+
 type Salt struct {
 	salt string
 }
@@ -28,14 +28,14 @@ func (s *Salt) Bytes() []byte {
 
 type SaltOptions struct {
 	Length int
-	ASCII bool
+	ASCII  bool
 }
 
 func DefaultSaltOptions() *SaltOptions {
 
 	opts := SaltOptions{
 		Length: min_length,
-		ASCII: false,
+		ASCII:  false,
 	}
 
 	return &opts
@@ -43,10 +43,10 @@ func DefaultSaltOptions() *SaltOptions {
 
 func NewRandomSalt(opts *SaltOptions) (*Salt, error) {
 
-     	str_opts := random.DefaultOptions()
+	str_opts := random.DefaultOptions()
 	str_opts.Length = opts.Length
 	str_opts.ASCII = opts.ASCII
-			
+
 	s, err := random.String(str_opts)
 
 	if err != nil {
