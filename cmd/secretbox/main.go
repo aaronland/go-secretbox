@@ -2,10 +2,6 @@ package main
 
 // https://godoc.org/golang.org/x/crypto/nacl/secretbox
 
-// please don't import anything that isn't part of the standard
-// library or "golang.org/x/" unless there's a really good reason
-// to (20171025/thisisaaronland)
-
 import (
 	"flag"
 	"fmt"

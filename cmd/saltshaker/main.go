@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/aaronland/go-secretbox/config"
-	"github.com/aaronland/go-secretbox/salt"
+	"github.com/aaronland/go-string/salt"
 	"io"
 	"log"
 	"os"

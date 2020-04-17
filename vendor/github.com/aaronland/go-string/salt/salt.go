@@ -1,8 +1,5 @@
 package salt
 
-// maybe just move this in to go-string/salt/salt.go ?
-// (20180614/thisisaaronland)
-
 import (
 	"errors"
 	"github.com/aaronland/go-string/random"

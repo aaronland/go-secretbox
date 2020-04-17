@@ -1,0 +1,15 @@
+# github.com/aaronland/go-string v0.1.2
+github.com/aaronland/go-string/random
+github.com/aaronland/go-string/salt
+# golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
+golang.org/x/crypto/internal/subtle
+golang.org/x/crypto/nacl/secretbox
+golang.org/x/crypto/pbkdf2
+golang.org/x/crypto/poly1305
+golang.org/x/crypto/salsa20/salsa
+golang.org/x/crypto/scrypt
+golang.org/x/crypto/ssh/terminal
+# golang.org/x/sys v0.0.0-20190412213103-97732733099d
+golang.org/x/sys/cpu
+golang.org/x/sys/unix
+golang.org/x/sys/windows
