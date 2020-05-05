@@ -1,7 +1,13 @@
 # github.com/aaronland/go-string v0.1.2
 github.com/aaronland/go-string/random
 github.com/aaronland/go-string/salt
-# golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
+# github.com/awnumar/memcall v0.0.0-20191004114545-73db50fd9f80
+github.com/awnumar/memcall
+# github.com/awnumar/memguard v0.22.2
+github.com/awnumar/memguard
+github.com/awnumar/memguard/core
+# golang.org/x/crypto v0.0.0-20200429183012-4b2356b1ed79
+golang.org/x/crypto/blake2b
 golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/nacl/secretbox
 golang.org/x/crypto/pbkdf2
@@ -9,7 +15,7 @@ golang.org/x/crypto/poly1305
 golang.org/x/crypto/salsa20/salsa
 golang.org/x/crypto/scrypt
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/sys v0.0.0-20190412213103-97732733099d
+# golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows

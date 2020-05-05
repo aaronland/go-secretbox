@@ -1,12 +1,14 @@
 package secretbox
 
 // https://godoc.org/golang.org/x/crypto/scrypt
+// https://godoc.org/github.com/awnumar/memguard
 
 import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/awnumar/memguard"
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/scrypt"
 	"io"
@@ -17,8 +19,13 @@ import (
 	"strings"
 )
 
+func init() {
+
+	memguard.CatchInterrupt()
+}
+
 type Secretbox struct {
-	Key     [32]byte
+	enclave *memguard.Enclave
 	options *SecretboxOptions
 }
 
@@ -41,23 +48,44 @@ func NewSecretboxOptions() *SecretboxOptions {
 
 func NewSecretbox(pswd string, opts *SecretboxOptions) (*Secretbox, error) {
 
+	r := strings.NewReader(pswd)
+	return NewSecretboxWithReader(r, opts)
+}
+
+func NewSecretboxWithReader(fh io.Reader, opts *SecretboxOptions) (*Secretbox, error) {
+
 	// PLEASE TRIPLE-CHECK opts.Salt HERE...
 
 	N := 32768
 	r := 8
 	p := 1
 
-	skey, err := scrypt.Key([]byte(pswd), []byte(opts.Salt), N, r, p, 32)
+	body, err := ioutil.ReadAll(fh)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var key [32]byte
-	copy(key[:], skey)
+	key, err := scrypt.Key(body, []byte(opts.Salt), N, r, p, 32)
+
+	/*
+		if err != nil {
+			return nil, err
+		}
+
+		var key []byte
+		copy(key[:], skey)
+	*/
+
+	enclave := memguard.NewEnclave([]byte(key))
+
+	return NewSecretboxWithEnclave(enclave, opts)
+}
+
+func NewSecretboxWithEnclave(enclave *memguard.Enclave, opts *SecretboxOptions) (*Secretbox, error) {
 
 	sb := Secretbox{
-		Key:     key,
+		enclave: enclave,
 		options: opts,
 	}
 
@@ -74,7 +102,15 @@ func (sb Secretbox) Lock(body []byte) (string, error) {
 		return "", err
 	}
 
-	enc := secretbox.Seal(nonce[:], body, &nonce, &sb.Key)
+	key, err := sb.enclave.Open()
+
+	if err != nil {
+		return "", err
+	}
+
+	defer key.Destroy()
+
+	enc := secretbox.Seal(nonce[:], body, &nonce, key.ByteArray32())
 	enc_hex := base64.StdEncoding.EncodeToString(enc)
 
 	return enc_hex, nil
@@ -121,7 +157,15 @@ func (sb Secretbox) Unlock(body_hex []byte) ([]byte, error) {
 	var nonce [24]byte
 	copy(nonce[:], body[:24])
 
-	out, ok := secretbox.Open(nil, body[24:], &nonce, &sb.Key)
+	key, err := sb.enclave.Open()
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer key.Destroy()
+
+	out, ok := secretbox.Open(nil, body[24:], &nonce, key.ByteArray32())
 
 	if !ok {
 		return nil, errors.New("Unable to open secretbox")
