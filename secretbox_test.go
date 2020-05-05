@@ -25,7 +25,7 @@ func TestSecretbox(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	unlocked, err := sb.Unlock([]byte(locked))
+	unlocked, err := sb.Unlock(locked)
 
 	if err != nil {
 		t.Fatal(err)

@@ -8,15 +8,11 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"github.com/awnumar/memguard"
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/scrypt"
 	"io"
-	"log"
-	"os"
-	"path/filepath"
-	"strings"
+	
 )
 
 func init() {
@@ -92,7 +88,12 @@ func (sb Secretbox) Lock(body []byte) (string, error) {
 
 func (sb Secretbox) LockWithReader(r io.Reader) (string, error) {
 
-	buf := memguard.NewBufferFromReader(r)
+	buf, err := memguard.NewBufferFromEntireReader(r)
+
+	if err != nil {
+		return "", err
+	}
+	
 	defer buf.Destroy()
 
 	return sb.LockWithBuffer(buf)
@@ -122,42 +123,9 @@ func (sb Secretbox) LockWithBuffer(buf *memguard.LockedBuffer) (string, error) {
 	return enc_hex, nil
 }
 
-func (sb Secretbox) LockFile(abs_path string) (string, error) {
+func (sb Secretbox) Unlock(body_hex string) (*memguard.LockedBuffer, error) {
 
-	root := filepath.Dir(abs_path)
-	fname := filepath.Base(abs_path)
-
-	buf, err := ReadFile(abs_path)
-
-	if err != nil {
-		return "", err
-	}
-
-	defer buf.Destroy()
-
-	enc_hex, err := sb.LockWithBuffer(buf)
-
-	if err != nil {
-		return "", err
-	}
-
-	out_buf := memguard.NewBufferFromBytes([]byte(enc_hex))
-	defer out_buf.Destroy()
-
-	enc_fname := fmt.Sprintf("%s%s", fname, sb.options.Suffix)
-	enc_path := filepath.Join(root, enc_fname)
-
-	if sb.options.Debug {
-		log.Printf("debugging is enabled so don't actually write %s\n", enc_path)
-		return enc_path, nil
-	}
-
-	return WriteFile(out_buf, enc_path)
-}
-
-func (sb Secretbox) Unlock(body_hex []byte) (*memguard.LockedBuffer, error) {
-
-	body_str, err := base64.StdEncoding.DecodeString(string(body_hex))
+	body_str, err := base64.StdEncoding.DecodeString(body_hex)
 
 	if err != nil {
 		return nil, err
@@ -184,77 +152,4 @@ func (sb Secretbox) Unlock(body_hex []byte) (*memguard.LockedBuffer, error) {
 
 	buf := memguard.NewBufferFromBytes(out)
 	return buf, nil
-}
-
-func (sb Secretbox) UnlockFile(abs_path string) (string, error) {
-
-	root := filepath.Dir(abs_path)
-	fname := filepath.Base(abs_path)
-	ext := filepath.Ext(abs_path)
-
-	if ext != sb.options.Suffix {
-		return "", errors.New("Unexpected suffix")
-	}
-
-	in_buf, err := ReadFile(abs_path)
-
-	if err != nil {
-		return "", err
-	}
-
-	defer in_buf.Destroy()
-
-	out_buf, err := sb.Unlock(in_buf.Bytes())
-
-	if err != nil {
-		return "", err
-	}
-
-	defer out_buf.Destroy()
-
-	out_fname := strings.TrimRight(fname, ext)
-	out_path := filepath.Join(root, out_fname)
-
-	if sb.options.Debug {
-		log.Printf("debugging is enabled so don't actually write %s\n", out_path)
-		return out_path, nil
-	}
-
-	return WriteFile(out_buf, out_path)
-}
-
-func ReadFile(path string) (*memguard.LockedBuffer, error) {
-
-	fh, err := os.Open(path)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer fh.Close()
-
-	return memguard.NewBufferFromEntireReader(fh)
-}
-
-func WriteFile(buf *memguard.LockedBuffer, path string) (string, error) {
-
-	fh, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
-
-	if err != nil {
-		return "", err
-	}
-
-	_, err = fh.Write(buf.Bytes())
-
-	if err != nil {
-		return "", err
-	}
-
-	err = fh.Close()
-
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
 }
