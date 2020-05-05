@@ -31,7 +31,7 @@ func TestSecretbox(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if string(unlocked) != plain {
+	if string(unlocked.String()) != plain {
 		t.Fatal("Unlock failed")
 	}
 }

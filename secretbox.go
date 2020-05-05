@@ -13,7 +13,6 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/scrypt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -49,11 +48,13 @@ func NewSecretboxOptions() *SecretboxOptions {
 
 func NewSecretbox(pswd string, opts *SecretboxOptions) (*Secretbox, error) {
 
-	r := strings.NewReader(pswd)
-	return NewSecretboxWithReader(r, opts)
+	buf := memguard.NewBufferFromBytes([]byte(pswd))
+	defer buf.Destroy()
+
+	return NewSecretboxWithBuffer(buf, opts)
 }
 
-func NewSecretboxWithReader(fh io.Reader, opts *SecretboxOptions) (*Secretbox, error) {
+func NewSecretboxWithBuffer(buf *memguard.LockedBuffer, opts *SecretboxOptions) (*Secretbox, error) {
 
 	// PLEASE TRIPLE-CHECK opts.Salt HERE...
 
@@ -61,13 +62,7 @@ func NewSecretboxWithReader(fh io.Reader, opts *SecretboxOptions) (*Secretbox, e
 	r := 8
 	p := 1
 
-	body, err := ioutil.ReadAll(fh)
-
-	if err != nil {
-		return nil, err
-	}
-
-	key, err := scrypt.Key(body, []byte(opts.Salt), N, r, p, 32)
+	key, err := scrypt.Key(buf.Bytes(), []byte(opts.Salt), N, r, p, 32)
 
 	if err != nil {
 		return nil, err
@@ -89,6 +84,22 @@ func NewSecretboxWithEnclave(enclave *memguard.Enclave, opts *SecretboxOptions) 
 
 func (sb Secretbox) Lock(body []byte) (string, error) {
 
+	buf := memguard.NewBufferFromBytes(body)
+	defer buf.Destroy()
+
+	return sb.LockWithBuffer(buf)
+}
+
+func (sb Secretbox) LockWithReader(r io.Reader) (string, error) {
+
+	buf := memguard.NewBufferFromReader(r)
+	defer buf.Destroy()
+
+	return sb.LockWithBuffer(buf)
+}
+
+func (sb Secretbox) LockWithBuffer(buf *memguard.LockedBuffer) (string, error) {
+
 	var nonce [24]byte
 
 	_, err := io.ReadFull(rand.Reader, nonce[:])
@@ -105,7 +116,7 @@ func (sb Secretbox) Lock(body []byte) (string, error) {
 
 	defer key.Destroy()
 
-	enc := secretbox.Seal(nonce[:], body, &nonce, key.ByteArray32())
+	enc := secretbox.Seal(nonce[:], buf.Bytes(), &nonce, key.ByteArray32())
 	enc_hex := base64.StdEncoding.EncodeToString(enc)
 
 	return enc_hex, nil
@@ -116,17 +127,22 @@ func (sb Secretbox) LockFile(abs_path string) (string, error) {
 	root := filepath.Dir(abs_path)
 	fname := filepath.Base(abs_path)
 
-	body, err := ReadFile(abs_path)
+	buf, err := ReadFile(abs_path)
 
 	if err != nil {
 		return "", err
 	}
 
-	enc_hex, err := sb.Lock(body)
+	defer buf.Destroy()
+
+	enc_hex, err := sb.LockWithBuffer(buf)
 
 	if err != nil {
 		return "", err
 	}
+
+	out_buf := memguard.NewBufferFromBytes([]byte(enc_hex))
+	defer out_buf.Destroy()
 
 	enc_fname := fmt.Sprintf("%s%s", fname, sb.options.Suffix)
 	enc_path := filepath.Join(root, enc_fname)
@@ -136,10 +152,10 @@ func (sb Secretbox) LockFile(abs_path string) (string, error) {
 		return enc_path, nil
 	}
 
-	return WriteFile([]byte(enc_hex), enc_path)
+	return WriteFile(out_buf, enc_path)
 }
 
-func (sb Secretbox) Unlock(body_hex []byte) ([]byte, error) {
+func (sb Secretbox) Unlock(body_hex []byte) (*memguard.LockedBuffer, error) {
 
 	body_str, err := base64.StdEncoding.DecodeString(string(body_hex))
 
@@ -166,7 +182,8 @@ func (sb Secretbox) Unlock(body_hex []byte) ([]byte, error) {
 		return nil, errors.New("Unable to open secretbox")
 	}
 
-	return out, nil
+	buf := memguard.NewBufferFromBytes(out)
+	return buf, nil
 }
 
 func (sb Secretbox) UnlockFile(abs_path string) (string, error) {
@@ -179,17 +196,21 @@ func (sb Secretbox) UnlockFile(abs_path string) (string, error) {
 		return "", errors.New("Unexpected suffix")
 	}
 
-	body_hex, err := ReadFile(abs_path)
+	in_buf, err := ReadFile(abs_path)
 
 	if err != nil {
 		return "", err
 	}
 
-	out, err := sb.Unlock(body_hex)
+	defer in_buf.Destroy()
+
+	out_buf, err := sb.Unlock(in_buf.Bytes())
 
 	if err != nil {
 		return "", err
 	}
+
+	defer out_buf.Destroy()
 
 	out_fname := strings.TrimRight(fname, ext)
 	out_path := filepath.Join(root, out_fname)
@@ -199,10 +220,10 @@ func (sb Secretbox) UnlockFile(abs_path string) (string, error) {
 		return out_path, nil
 	}
 
-	return WriteFile(out, out_path)
+	return WriteFile(out_buf, out_path)
 }
 
-func ReadFile(path string) ([]byte, error) {
+func ReadFile(path string) (*memguard.LockedBuffer, error) {
 
 	fh, err := os.Open(path)
 
@@ -210,10 +231,12 @@ func ReadFile(path string) ([]byte, error) {
 		return nil, err
 	}
 
-	return ioutil.ReadAll(fh)
+	defer fh.Close()
+
+	return memguard.NewBufferFromEntireReader(fh)
 }
 
-func WriteFile(body []byte, path string) (string, error) {
+func WriteFile(buf *memguard.LockedBuffer, path string) (string, error) {
 
 	fh, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
 
@@ -221,7 +244,7 @@ func WriteFile(body []byte, path string) (string, error) {
 		return "", err
 	}
 
-	_, err = fh.Write(body)
+	_, err = fh.Write(buf.Bytes())
 
 	if err != nil {
 		return "", err
