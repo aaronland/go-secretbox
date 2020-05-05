@@ -2,6 +2,7 @@ package secretbox
 
 // https://godoc.org/golang.org/x/crypto/scrypt
 // https://godoc.org/github.com/awnumar/memguard
+// https://spacetime.dev/encrypting-secrets-in-memory
 
 import (
 	"crypto/rand"
@@ -68,17 +69,11 @@ func NewSecretboxWithReader(fh io.Reader, opts *SecretboxOptions) (*Secretbox, e
 
 	key, err := scrypt.Key(body, []byte(opts.Salt), N, r, p, 32)
 
-	/*
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
+	}
 
-		var key []byte
-		copy(key[:], skey)
-	*/
-
-	enclave := memguard.NewEnclave([]byte(key))
-
+	enclave := memguard.NewEnclave(key)
 	return NewSecretboxWithEnclave(enclave, opts)
 }
 
