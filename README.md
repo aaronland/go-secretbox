@@ -1,6 +1,10 @@
 # go-secretbox
 
-A thin wrapper around the Golang [secretbox](https://godoc.org/golang.org/x/crypto/nacl/secretbox) package.
+A thin wrapper around the Golang [secretbox](https://godoc.org/golang.org/x/crypto/nacl/secretbox) and [awnumar/memguard](https://github.com/awnumar/memguard) package.
+
+## Documentation
+
+[![Go Reference](https://pkg.go.dev/badge/github.com/aaronland/go-secretbox.svg)](https://pkg.go.dev/github.com/aaronland/go-secretbox)
 
 ## Example
 
